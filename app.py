@@ -1,6 +1,21 @@
 from flask import Flask, request, jsonify
 
 app=Flask(__name__) #Instance of flask class. The Flask class is called to create an application object. The __name__ is the name of the current module
+def calculate_player_rating(stats):
+    rating =(
+        (stats.get("experience",0)*2) +
+        (stats.get("competition level",0)*3) +
+        (stats.get("height",0)*1.5) +
+        (stats.get("weight",0)*1) +
+        (stats.get("wingspan",0)*1.2) +
+        (stats.get("shooting",0)*3) +
+        (stats.get("dribbling",0)*2) +
+        (stats.get("speed",0)*2) +
+        (stats.get("agility",0)*2)
+
+    ) / 9
+    return round(rating, 2)
+
 
 @app.route("/" ,methods=["GET"]) # @app.route is the decorator, "/" this meanns its the homepage of the API. methods=["GET"] this route only allows get requests
 def home(): # Function runs when someone visits the /
@@ -10,15 +25,8 @@ def home(): # Function runs when someone visits the /
 def predict(): # Will run whever a user inputs stats 
     data=request.get_json() # Extracts Json data sent in the request
 
-    experience= data.get("experience",0)
-    level= data.get("level","recreational")
-    height= data.get("height",0)
-    weight= data.get("weight",0)
-    wingspan= data.get("wingspan",0)
-    shooting= data.get("shooting",0)
-    dribbling= data.get("dribbling",0)
-    speed= data.get("speed",0)
-    agility= data.get("agility",0)
+    required_fields=["experience","competition level","height","weight",]
 
+   
 
 
