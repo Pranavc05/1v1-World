@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify
 import random
 
+players_in_tournament=[]
+
 app=Flask(__name__) #Instance of flask class. The Flask class is called to create an application object. The __name__ is the name of the current module
 def calculate_player_rating(stats):
     rating =(
         (stats.get("experience",0)*2) +
-        (stats.get("competition level",0)*3) +
+        (stats.get("competition_level",0)*3) +
         (stats.get("height",0)*1.5) +
         (stats.get("weight",0)*1) +
         (stats.get("wingspan",0)*1.2) +
@@ -27,7 +29,7 @@ def predict(): # Will run whever a user inputs stats
     data=request.get_json() # Extracts Json data sent in the request
 
     required_fields=["experience","competition level","height","weight","wingspan","shooting","dribbling","speed","agility"]
-    if not all(field in data for field in required_fields):
+    if not all(field in data for field in required_fields): # Checks if all the data in required_fields is present if it is it returns true, only returns true if every single piece of data present in required_fields is there.
         return jsonify({"error":"Missing required fields"}), 400
     
     player_rating=calculate_player_rating(data)
@@ -36,12 +38,30 @@ def predict(): # Will run whever a user inputs stats
         "message":"Player stats recieved!",
         "player rating": player_rating
     })
+@app.route("/signup",methods=["POST"])
+def signup():
+    data=request.get_json()
+    required_fields=["name","experience","competition level","height","weight","wingspan","shooting","dribbling","speed","agility"]
+    if not all(field in data for field in required_fields):
+         return jsonify({"error": "Missing required fields"}), 400
+    player_rating=calculate_player_rating(data)
+    player_data={
+        "name":data["name"],
+        "rating":player_rating
+    }
+    players_in_tournament.append(player_data)
+    return jsonify({
+        "message":f"{data['name']} has signed up for the tournament!",
+        "player_rating": player_rating
+    })
+
+
 
 if __name__=="__main__":
     app.run(debug=True)
 
 
-players_in_tournament=[]
+
 
 def add_player_to_tournament(player_data):
     players_in_tournament.append(player_data)
