@@ -49,108 +49,40 @@ def predict(): # Will run whever a user inputs stats
         "message":"Player stats recieved!",
         "player rating": player_rating
     })
-@app.route("/signup", methods=["POST"])
+@app.route("/signup",methods=["POST"])
 def signup():
-    """Handle player signup with validation and data sanitization."""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        # Validate required fields
-        required_fields = ["name", "experience", "competition_level", "height", 
-                         "weight", "wingspan", "shooting", "dribbling", "speed", "agility"]
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return jsonify({"error": "Missing required fields", "fields": missing_fields}), 400
-
-        # Check for duplicate names
-        if any(player["name"].lower() == data["name"].lower() for player in players_in_tournament):
-            return jsonify({"error": "Player name already exists"}), 400
-
-        # Validate numeric fields
-        numeric_fields = required_fields[1:]  # All fields except name
-        for field in numeric_fields:
-            try:
-                value = float(data[field])
-                if not 0 <= value <= 10:  # Assuming stats are on a 0-10 scale
-                    return jsonify({"error": f"{field} must be between 0 and 10"}), 400
-                data[field] = value
-            except (ValueError, TypeError):
-                return jsonify({"error": f"{field} must be a number"}), 400
-
-        # Calculate rating and create player data
-        player_rating = calculate_player_rating(data)
-        player_data = {
-            "id": len(players_in_tournament) + 1,  # Simple ID generation
-            "name": data["name"].strip(),  # Remove leading/trailing whitespace
-            "rating": player_rating,
-            "stats": {field: data[field] for field in numeric_fields}
-        }
-        
-        players_in_tournament.append(player_data)
-        
-        return jsonify({
-            "message": f"{player_data['name']} has signed up for the tournament!",
-            "player": player_data
-        }), 201  # 201 Created status code
-
-    except Exception as e:
-        return jsonify({"error": "Internal server error", "details": str(e)}), 500
-
-def find_closest_rating_match(player: Dict, excluded_ids: set) -> Optional[Dict]:
-    """Find the closest rating match for a player, excluding certain players."""
-    available_players = [p for p in players_in_tournament 
-                        if p["id"] != player["id"] and p["id"] not in excluded_ids]
-    
-    if not available_players:
-        return None
-    
-    # Sort by rating difference and get the closest match
-    return min(available_players, 
-              key=lambda p: abs(p["rating"] - player["rating"]))
-
-def random_matchmaking() -> Optional[Tuple[Dict, Dict]]:
-    """
-    Create a match between two players based on their ratings.
-    Returns tuple of (player1, player2) or None if not enough players.
-    """
-    if len(players_in_tournament) < 2:
-        return None
-
-    # Select first player randomly
-    player1 = random.choice(players_in_tournament)
-    
-    # Find closest rating match for player1
-    player2 = find_closest_rating_match(player1, set())
-    
-    if not player2:
-        return None
-        
-    return (player1, player2)
+    data=request.get_json()
+    required_fields=["name","experience","competition level","height","weight","wingspan","shooting","dribbling","speed","agility"]
+    if not all(field in data for field in required_fields):
+         return jsonify({"error": "Missing required fields"}), 400
+    player_rating=calculate_player_rating(data)
+    player_data={
+        "name":data["name"],
+        "rating":player_rating
+    }
+    players_in_tournament.append(player_data)
+    return jsonify({
+        "message":f"{data['name']} has signed up for the tournament!",
+        "player_rating": player_rating
+    })
 
 @app.route("/match", methods=["GET"])
 def get_random_match():
-    """Get a random match between two players with similar ratings."""
     match = random_matchmaking()
-    if not match:
+    if match:
+        player1, player2 = match
         return jsonify({
-            "message": "Not enough players for matchmaking",
-            "required_players": 2,
-            "current_players": len(players_in_tournament)
-        }), 400
-    
-    player1, player2 = match
-    rating_difference = abs(player1["rating"] - player2["rating"])
-    
+            "message": "Match found!",
+            "match": {
+                "player1": player1,
+                "player2": player2
+            }
+        })
     return jsonify({
-        "message": "Match found!",
-        "match": {
-            "player1": player1,
-            "player2": player2,
-            "rating_difference": round(rating_difference, 2)
-        }
-    })
+        "message": "Not enough players for matchmaking",
+        "required_players": 2,
+        "current_players": len(players_in_tournament)
+    }), 400
 
 @app.route("/tournament/start", methods=["GET"])
 def tournament_start():
@@ -175,6 +107,15 @@ if __name__=="__main__":
 
 def add_player_to_tournament(player_data):
     players_in_tournament.append(player_data)
+
+def random_matchmaking():
+    if len(players_in_tournament) < 2:
+        return None
+    player1=random.choice(players_in_tournament)
+    player2=random.choice(players_in_tournament)
+    while player1 == player2:
+        player2= random.choice(players_in_tournament)
+    return(player1,player2)
 
 def start_tournament():
     match=random_matchmaking()
