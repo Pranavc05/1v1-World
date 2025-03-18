@@ -55,7 +55,38 @@ def signup():
         "player_rating": player_rating
     })
 
+@app.route("/match", methods=["GET"])
+def get_random_match():
+    match = random_matchmaking()
+    if match:
+        player1, player2 = match
+        return jsonify({
+            "message": "Match found!",
+            "match": {
+                "player1": player1,
+                "player2": player2
+            }
+        })
+    return jsonify({
+        "message": "Not enough players for matchmaking",
+        "required_players": 2,
+        "current_players": len(players_in_tournament)
+    }), 400
 
+@app.route("/tournament/start", methods=["GET"])
+def tournament_start():
+    if len(players_in_tournament) < 2:
+        return jsonify({
+            "message": "Not enough players to start tournament",
+            "required_players": 2,
+            "current_players": len(players_in_tournament)
+        }), 400
+    
+    result = start_tournament()
+    return jsonify({
+        "message": result,
+        "total_players": len(players_in_tournament)
+    })
 
 if __name__=="__main__":
     app.run(debug=True)
